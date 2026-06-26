@@ -1,4 +1,4 @@
-# Mercado Pro POS
+# Limitless POS
 
 A polished bodega + restaurant point-of-sale demo designed to show an owner what a custom POS can become: fast checkout, restaurant tickets, grocery inventory, staff profiles, reporting, purchasing alerts, and a clear path to a real backend.
 
