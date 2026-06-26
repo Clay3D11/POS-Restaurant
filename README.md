@@ -1,4 +1,4 @@
-# Limitess POS
+# Mercado Pro POS
 
 A polished bodega + restaurant point-of-sale demo designed to show an owner what a custom POS can become: fast checkout, restaurant tickets, grocery inventory, staff profiles, reporting, purchasing alerts, and a clear path to a real backend.
 
@@ -16,6 +16,7 @@ This version is intentionally GitHub Pages friendly. It runs from `index.html` w
 - Owner dashboard with sales, margin, average ticket, labor estimate, low-stock alerts, hourly bars, and operational alerts.
 - Reports view with sales export to CSV.
 - Local persistence so the owner can click around and see data change.
+- Premium mobile drawer navigation, responsive ticket layout, topbar business snapshot, and demo reset mode for polished presentations.
 
 ## How To Run
 

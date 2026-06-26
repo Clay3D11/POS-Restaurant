@@ -5,6 +5,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="Modern bodega and restaurant POS demo with checkout, inventory, staff, reports, and operations tools.">
+  <meta name="theme-color" content="#0f1416">
   <title>Limitless POS</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -36,12 +37,25 @@
         <small id="sync-status">Oracle Cloud sync ready</small>
       </div>
     </aside>
+    <button class="sidebar-backdrop" id="sidebar-backdrop" type="button" aria-label="Close navigation"></button>
 
     <main class="workspace">
       <header class="topbar">
-        <div>
-          <p class="eyebrow" id="business-date">Friday, June 26, 2026</p>
-          <h1 id="view-title">Point of Sale</h1>
+        <div class="topbar-title">
+          <button class="mobile-menu-button" id="mobile-menu-button" type="button" aria-label="Open navigation" aria-expanded="false">
+            <span></span>
+            <span></span>
+            <span></span>
+          </button>
+          <div>
+            <p class="eyebrow" id="business-date">Friday, June 26, 2026</p>
+            <h1 id="view-title">Point of Sale</h1>
+            <div class="topbar-badges" aria-label="Business snapshot">
+              <span id="topbar-sales">Sales $0</span>
+              <span id="topbar-low-stock">0 low stock</span>
+              <span id="topbar-kitchen">0 kitchen</span>
+            </div>
+          </div>
         </div>
         <div class="topbar-actions">
           <label class="search-wrap" for="global-search">
@@ -118,13 +132,13 @@
   </div>
 
   <dialog class="modal" id="payment-modal">
-    <form method="dialog">
+    <form id="payment-form">
       <div class="modal-head">
         <div>
           <p class="eyebrow">Payment</p>
           <h2 id="payment-title">Close sale</h2>
         </div>
-        <button class="icon-button" value="cancel" aria-label="Close">x</button>
+        <button class="icon-button" id="payment-close" type="button" aria-label="Close">x</button>
       </div>
       <div class="payment-display">
         <span>Amount due</span>
@@ -135,10 +149,27 @@
       </label>
       <div class="cash-grid" id="cash-grid"></div>
       <div class="modal-actions">
-        <button value="cancel">Cancel</button>
-        <button class="primary" id="confirm-payment" value="default">Finalize</button>
+        <button id="cancel-payment" type="button">Cancel</button>
+        <button class="primary" id="confirm-payment" type="button">Finalize</button>
       </div>
     </form>
+  </dialog>
+
+  <dialog class="receipt-modal" id="receipt-modal">
+    <div class="receipt-shell">
+      <div class="receipt-toolbar">
+        <div>
+          <p class="eyebrow">Receipt preview</p>
+          <h2>Sale complete</h2>
+        </div>
+        <button class="icon-button" id="receipt-close" type="button" aria-label="Close receipt">x</button>
+      </div>
+      <article class="luxury-receipt" id="receipt-content"></article>
+      <div class="receipt-actions">
+        <button id="receipt-print" type="button">Print Receipt</button>
+        <button class="primary" id="receipt-done" type="button">Done</button>
+      </div>
+    </div>
   </dialog>
 
   <div class="toast-stack" id="toast-stack" aria-live="polite"></div>

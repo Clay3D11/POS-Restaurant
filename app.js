@@ -1,6 +1,8 @@
 const currency = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" });
 const number = new Intl.NumberFormat("en-US");
+const STORAGE_KEY = "limitlessPosDemoState";
 
+// Seed data keeps the GitHub Pages demo fully self-contained.
 const seedProducts = [
   { id: "D101", sku: "849200101", name: "Chopped Cheese Hero", category: "Grill", price: 8.99, cost: 3.1, tax: 0.08875, stock: 42, par: 18, vendor: "Local Butcher", cook: true, image: "https://images.unsplash.com/photo-1553979459-d2229ba7433b?auto=format&fit=crop&w=600&q=80" },
   { id: "D102", sku: "849200102", name: "Chicken Empanada", category: "Hot Food", price: 2.75, cost: 0.85, tax: 0.08875, stock: 64, par: 30, vendor: "Casa Foods", cook: true, image: "https://images.unsplash.com/photo-1625938146369-adc83368a3df?auto=format&fit=crop&w=600&q=80" },
@@ -39,9 +41,8 @@ const state = loadState();
 let selectedCategory = "All";
 let currentPaymentType = "cash";
 
-function loadState() {
-  const saved = localStorage.getItem("mercadoProDemo");
-  if (saved) return JSON.parse(saved);
+// State and formatting helpers
+function createSeedState() {
   return {
     products: structuredClone(seedProducts),
     staff: structuredClone(seedStaff),
@@ -59,8 +60,17 @@ function loadState() {
   };
 }
 
+function loadState() {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY) || localStorage.getItem("mercadoProDemo");
+    return saved ? JSON.parse(saved) : createSeedState();
+  } catch (error) {
+    return createSeedState();
+  }
+}
+
 function saveState() {
-  localStorage.setItem("mercadoProDemo", JSON.stringify(state));
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
 }
 
 function $(selector) {
@@ -82,6 +92,7 @@ function calcCart() {
   return { subtotal, tax, discount, total: Math.max(0, subtotal + tax - discount) };
 }
 
+// Render pipeline
 function render() {
   renderHeader();
   renderCategories();
@@ -92,10 +103,14 @@ function render() {
 }
 
 function renderHeader() {
+  const totals = getBusinessTotals();
   $("#business-date").textContent = new Intl.DateTimeFormat("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" }).format(new Date());
   $("#ticket-number").textContent = `Order ${state.orderNumber}`;
   $("#service-mode").textContent = state.serviceMode;
   $("#sync-status").textContent = `${state.sales.length} sales stored locally`;
+  $("#topbar-sales").textContent = `Sales ${money(totals.revenue)}`;
+  $("#topbar-low-stock").textContent = `${totals.lowStock} low stock`;
+  $("#topbar-kitchen").textContent = `${state.kitchen.length} kitchen`;
   $all("[data-service]").forEach(button => {
     button.classList.toggle("active", button.dataset.service === state.serviceMode);
   });
@@ -107,6 +122,7 @@ function renderHeader() {
   $("#clock-button").textContent = activeStaff.status === "Clocked in" ? "Clock Out" : "Clock In";
 }
 
+// POS register views
 function renderCategories() {
   const categories = ["All", ...new Set(state.products.map(product => product.category))];
   $("#category-tabs").innerHTML = categories.map(category => `<button class="${category === selectedCategory ? "active" : ""}" data-category="${category}">${category}</button>`).join("");
@@ -125,7 +141,7 @@ function renderCatalog() {
     const stockText = product.stock <= 0 ? "Out" : product.stock <= product.par ? "Low" : `${product.stock} in stock`;
     return `
       <button class="product-card" data-product="${product.id}" ${product.stock <= 0 ? "disabled" : ""}>
-        <img src="${product.image}" alt="${product.name}">
+        <img src="${product.image}" alt="${product.name}" loading="lazy">
         <span class="product-body">
           <span class="product-name">${product.name}</span>
           <span class="product-meta">${product.category} / SKU ${product.sku}</span>
@@ -143,15 +159,24 @@ function renderCart() {
   const totals = calcCart();
   $("#cart-lines").innerHTML = state.cart.length ? state.cart.map(line => `
     <div class="cart-line">
-      <div>
-        <strong>${line.name}</strong>
-        <div class="line-meta">${money(line.price)} each / ${line.category}</div>
+      <div class="line-main">
+        <div class="line-title-row">
+          <strong>${line.name}</strong>
+          <span class="line-category">${line.category}</span>
+        </div>
+        <div class="line-meta">
+          <span>${money(line.price)} each</span>
+          <span>${line.qty} item${line.qty === 1 ? "" : "s"}</span>
+        </div>
       </div>
-      <div class="qty-tools">
-        <button data-qty="${line.id}" data-delta="-1">-</button>
-        <strong>${line.qty}</strong>
-        <button data-qty="${line.id}" data-delta="1">+</button>
-        <button data-remove="${line.id}" aria-label="Remove ${line.name}">x</button>
+      <div class="line-side">
+        <strong class="line-total">${money(line.price * line.qty)}</strong>
+        <div class="qty-tools">
+          <button data-qty="${line.id}" data-delta="-1" aria-label="Decrease ${line.name}">-</button>
+          <strong>${line.qty}</strong>
+          <button data-qty="${line.id}" data-delta="1" aria-label="Increase ${line.name}">+</button>
+          <button class="remove-line" data-remove="${line.id}" aria-label="Remove ${line.name}">x</button>
+        </div>
       </div>
     </div>
   `).join("") : `<div class="empty-state"><span>Scan a UPC or tap a product to start the order.</span></div>`;
@@ -162,6 +187,7 @@ function renderCart() {
   $("#grand-total").textContent = money(totals.total);
 }
 
+// Management views
 function renderDynamicViews() {
   renderDashboard();
   renderInventory();
@@ -293,6 +319,12 @@ function renderSettings() {
       ${systemCard("Automation", "Purchasing + alerts", "Trigger reorder drafts, margin alerts, staff overtime flags, and nightly close reports.")}
       ${systemCard("Security", "Role-based profiles", "Owner, manager, cashier, cook, and auditor permissions are modeled in the UI.")}
       ${systemCard("Hardware", "Scanner + printer path", "Browser keyboard wedge scanners, cash drawer pulse, label printer, and kitchen display.")}
+      <article class="system-card full">
+        <p class="eyebrow">Presentation mode</p>
+        <strong>Reset demo data</strong>
+        <span class="subtle">Restore the original products, staff, sales, inventory, and kitchen queue before showing the system to a new owner.</span>
+        <button class="ghost-button danger-action" data-action="reset-demo">Reset Demo</button>
+      </article>
     </div>
   `;
 }
@@ -305,6 +337,7 @@ function systemCard(title, headline, body) {
   return `<article class="system-card"><p class="eyebrow">${title}</p><strong>${headline}</strong><span class="subtle">${body}</span></article>`;
 }
 
+// Business calculations
 function getBusinessTotals() {
   const revenue = state.sales.reduce((sum, sale) => sum + sale.total, 0);
   const cogs = state.products.reduce((sum, product) => sum + product.cost * Math.min(4, Math.max(0, product.par - product.stock)), 0);
@@ -337,6 +370,7 @@ function ownerAlerts() {
   ];
 }
 
+// POS actions
 function addProduct(productId) {
   const product = state.products.find(item => item.id === productId);
   if (!product || product.stock <= 0) return;
@@ -371,11 +405,75 @@ function openPayment(type) {
   $("#amount-due").textContent = money(totals.total);
   $("#tendered-input").value = type === "cash" ? totals.total.toFixed(2) : totals.total.toFixed(2);
   $("#cash-grid").innerHTML = [5, 10, 20, 50, 100, totals.total].map(amount => `<button type="button" data-cash="${amount}">${money(amount)}</button>`).join("");
-  $("#payment-modal").showModal();
+  const modal = $("#payment-modal");
+  if (!modal.open) modal.showModal();
+}
+
+function closePayment() {
+  const modal = $("#payment-modal");
+  if (modal.open) modal.close();
+}
+
+function closeReceipt() {
+  const modal = $("#receipt-modal");
+  if (modal.open) modal.close();
+}
+
+function openReceipt(receipt) {
+  const modal = $("#receipt-modal");
+  $("#receipt-content").innerHTML = renderReceipt(receipt);
+  if (!modal.open) modal.showModal();
+}
+
+function renderReceipt(receipt) {
+  const itemRows = receipt.lines.map(line => `
+    <div class="receipt-item">
+      <div>
+        <strong>${line.name}</strong>
+        <span>${line.category} / ${money(line.price)} each</span>
+      </div>
+      <span>${line.qty}</span>
+      <strong>${money(line.price * line.qty)}</strong>
+    </div>
+  `).join("");
+
+  return `
+    <div class="receipt-brand">
+      <div class="receipt-mark">LP</div>
+      <h3>Limitless POS</h3>
+      <p>Bodega + Restaurant</p>
+      <span>123 Market Avenue / New York, NY</span>
+      <span>(212) 555-0198</span>
+    </div>
+    <div class="receipt-meta">
+      <span>Receipt</span><strong>#${receipt.orderNumber}</strong>
+      <span>Date</span><strong>${receipt.date}</strong>
+      <span>Cashier</span><strong>${receipt.staff}</strong>
+      <span>Service</span><strong>${receipt.serviceMode}</strong>
+    </div>
+    <div class="receipt-items">
+      <div class="receipt-item receipt-item-head"><span>Item</span><span>Qty</span><span>Total</span></div>
+      ${itemRows}
+    </div>
+    <div class="receipt-totals">
+      <div><span>Subtotal</span><strong>${money(receipt.totals.subtotal)}</strong></div>
+      <div><span>Tax</span><strong>${money(receipt.totals.tax)}</strong></div>
+      <div><span>Discount</span><strong>-${money(receipt.totals.discount)}</strong></div>
+      <div class="receipt-grand"><span>Total paid</span><strong>${money(receipt.totals.total)}</strong></div>
+      <div><span>Payment</span><strong>${receipt.paymentType.toUpperCase()}</strong></div>
+      <div><span>Tendered</span><strong>${money(receipt.tendered)}</strong></div>
+      <div><span>Change</span><strong>${money(receipt.change)}</strong></div>
+    </div>
+    <div class="receipt-footer">
+      <p>Thank you for your business</p>
+      <span>Rewards, delivery, inventory, staff, and reporting powered by Limitless POS.</span>
+      <strong class="receipt-barcode">LP-${receipt.orderNumber}-${receipt.lines.length}</strong>
+    </div>
+  `;
 }
 
 function finalizeSale(event) {
-  event.preventDefault();
+  if (event) event.preventDefault();
   const totals = calcCart();
   const tendered = Number($("#tendered-input").value || 0);
   if (tendered < totals.total) {
@@ -384,6 +482,18 @@ function finalizeSale(event) {
   }
 
   const activeStaff = state.staff.find(member => member.id === state.activeStaffId);
+  const receipt = {
+    orderNumber: state.orderNumber,
+    date: new Intl.DateTimeFormat("en-US", { dateStyle: "medium", timeStyle: "short" }).format(new Date()),
+    staff: activeStaff.name,
+    serviceMode: state.serviceMode,
+    paymentType: currentPaymentType,
+    tendered,
+    change: currentPaymentType === "cash" ? tendered - totals.total : 0,
+    totals: { ...totals },
+    lines: structuredClone(state.cart)
+  };
+
   state.sales.push({
     id: state.orderNumber,
     hour: new Intl.DateTimeFormat("en-US", { hour: "numeric" }).format(new Date()),
@@ -404,12 +514,12 @@ function finalizeSale(event) {
   }
 
   activeStaff.sales += totals.total;
-  const change = currentPaymentType === "cash" ? tendered - totals.total : 0;
   state.cart = [];
   state.discountRate = 0;
   state.orderNumber += 1;
-  $("#payment-modal").close();
-  toast(`Sale complete. ${change > 0 ? `Change due ${money(change)}.` : "Receipt saved."}`);
+  closePayment();
+  openReceipt(receipt);
+  toast(`Sale complete. ${receipt.change > 0 ? `Change due ${money(receipt.change)}.` : "Receipt saved."}`);
   render();
 }
 
@@ -452,8 +562,19 @@ function quickAction(action) {
     render();
   }
   if (action === "export") exportCsv();
+  if (action === "reset-demo") resetDemo();
 }
 
+function resetDemo() {
+  localStorage.removeItem(STORAGE_KEY);
+  localStorage.removeItem("mercadoProDemo");
+  Object.assign(state, createSeedState());
+  selectedCategory = "All";
+  toast("Demo data restored.");
+  render();
+}
+
+// Export, notifications, and app events
 function exportCsv() {
   const rows = [["order", "hour", "staff", "payment", "total"], ...state.sales.map(sale => [sale.id, sale.hour, sale.staff, sale.payment, sale.total.toFixed(2)])];
   const csv = rows.map(row => row.join(",")).join("\n");
@@ -473,6 +594,14 @@ function toast(message) {
   node.textContent = message;
   $("#toast-stack").appendChild(node);
   setTimeout(() => node.remove(), 3200);
+}
+
+function setSidebar(open) {
+  const shell = $(".app-shell");
+  const button = $("#mobile-menu-button");
+  shell.classList.toggle("sidebar-open", open);
+  button.setAttribute("aria-expanded", open.toString());
+  document.body.classList.toggle("nav-locked", open);
 }
 
 function bindEvents() {
@@ -511,6 +640,7 @@ function bindEvents() {
       $(`#view-${button.dataset.view}`).classList.add("active");
       $("#view-title").textContent = button.textContent.trim() === "POS" ? "Point of Sale" : button.textContent.trim();
       renderDynamicViews();
+      setSidebar(false);
     });
   });
 
@@ -532,8 +662,22 @@ function bindEvents() {
     render();
   });
   $("#complete-sale").addEventListener("click", () => openPayment("cash"));
-  $("#payment-modal form").addEventListener("submit", finalizeSale);
+  $("#payment-form").addEventListener("submit", event => event.preventDefault());
   $("#confirm-payment").addEventListener("click", finalizeSale);
+  $("#cancel-payment").addEventListener("click", closePayment);
+  $("#payment-close").addEventListener("click", closePayment);
+  $("#receipt-close").addEventListener("click", closeReceipt);
+  $("#receipt-done").addEventListener("click", closeReceipt);
+  $("#receipt-print").addEventListener("click", () => window.print());
+  $("#mobile-menu-button").addEventListener("click", () => setSidebar(!$(".app-shell").classList.contains("sidebar-open")));
+  $("#sidebar-backdrop").addEventListener("click", () => setSidebar(false));
+  document.addEventListener("keydown", event => {
+    if (event.key === "Escape") {
+      setSidebar(false);
+      closePayment();
+      closeReceipt();
+    }
+  });
 }
 
 bindEvents();
