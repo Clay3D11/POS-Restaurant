@@ -195,12 +195,12 @@ function renderInventory() {
   const rows = state.products.map(product => {
     const status = product.stock <= 0 ? ["Out", "danger"] : product.stock <= product.par ? ["Reorder", "warn"] : ["Healthy", ""];
     return `<tr>
-      <td><strong>${product.name}</strong><br><span class="subtle">${product.sku}</span></td>
-      <td>${product.category}</td>
-      <td>${number.format(product.stock)}</td>
-      <td>${product.par}</td>
-      <td>${product.vendor}</td>
-      <td><span class="status ${status[1]}">${status[0]}</span></td>
+      <td data-label="Item"><strong>${product.name}</strong><br><span class="subtle">${product.sku}</span></td>
+      <td data-label="Dept">${product.category}</td>
+      <td data-label="Stock">${number.format(product.stock)}</td>
+      <td data-label="Par">${product.par}</td>
+      <td data-label="Vendor">${product.vendor}</td>
+      <td data-label="Status"><span class="status ${status[1]}">${status[0]}</span></td>
     </tr>`;
   }).join("");
 
@@ -274,11 +274,11 @@ function renderReports() {
       </section>
       <section class="data-panel wide">
         <h2>Department performance</h2>
-        <table><thead><tr><th>Department</th><th>Sales</th><th>Share</th></tr></thead><tbody>${Object.entries(categoryTotals).map(([cat, total]) => `<tr><td>${cat}</td><td>${money(total)}</td><td>${Math.round(total / totals.revenue * 100)}%</td></tr>`).join("")}</tbody></table>
+        <table><thead><tr><th>Department</th><th>Sales</th><th>Share</th></tr></thead><tbody>${Object.entries(categoryTotals).map(([cat, total]) => `<tr><td data-label="Department">${cat}</td><td data-label="Sales">${money(total)}</td><td data-label="Share">${Math.round(total / totals.revenue * 100)}%</td></tr>`).join("")}</tbody></table>
       </section>
       <section class="data-panel wide">
         <h2>Recent receipts</h2>
-        <table><thead><tr><th>Order</th><th>Staff</th><th>Payment</th><th>Total</th></tr></thead><tbody>${state.sales.slice(-8).reverse().map(sale => `<tr><td>#${sale.id}</td><td>${sale.staff}</td><td>${sale.payment}</td><td>${money(sale.total)}</td></tr>`).join("")}</tbody></table>
+        <table><thead><tr><th>Order</th><th>Staff</th><th>Payment</th><th>Total</th></tr></thead><tbody>${state.sales.slice(-8).reverse().map(sale => `<tr><td data-label="Order">#${sale.id}</td><td data-label="Staff">${sale.staff}</td><td data-label="Payment">${sale.payment}</td><td data-label="Total">${money(sale.total)}</td></tr>`).join("")}</tbody></table>
       </section>
     </div>
   `;
