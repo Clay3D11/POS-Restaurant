@@ -1,0 +1,178 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Modern bodega and restaurant POS demo with checkout, inventory, staff, reports, and operations tools.">
+  <meta name="theme-color" content="#0f1416">
+  <title>Limitless POS Demo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="brand-block">
+        <div class="brand-mark">POS</div>
+        <div>
+          <strong>Limitless</strong>
+          <span>Bodega + Restaurant POS</span>
+        </div>
+      </div>
+      <nav class="nav-list" aria-label="Primary">
+        <button class="nav-item active" data-view="pos" title="Point of sale"><span>POS</span></button>
+        <button class="nav-item" data-view="dashboard" title="Owner dashboard"><span>Dashboard</span></button>
+        <button class="nav-item" data-view="inventory" title="Inventory"><span>Inventory</span></button>
+        <button class="nav-item" data-view="kitchen" title="Kitchen queue"><span>Kitchen</span></button>
+        <button class="nav-item" data-view="staff" title="Staff"><span>Staff</span></button>
+        <button class="nav-item" data-view="reports" title="Reports"><span>Reports</span></button>
+        <button class="nav-item" data-view="settings" title="System"><span>System</span></button>
+      </nav>
+      <div class="terminal-card">
+        <span>Terminal</span>
+        <strong id="terminal-status">Register 01 online</strong>
+        <small id="sync-status">Oracle Cloud sync ready</small>
+      </div>
+    </aside>
+    <button class="sidebar-backdrop" id="sidebar-backdrop" type="button" aria-label="Close navigation"></button>
+
+    <main class="workspace">
+      <header class="topbar">
+        <div class="topbar-title">
+          <button class="mobile-menu-button" id="mobile-menu-button" type="button" aria-label="Open navigation" aria-expanded="false">
+            <span></span>
+            <span></span>
+            <span></span>
+          </button>
+          <div>
+            <p class="eyebrow" id="business-date">Friday, June 26, 2026</p>
+            <h1 id="view-title">Point of Sale</h1>
+            <div class="topbar-badges" aria-label="Business snapshot">
+              <span id="topbar-sales">Sales $0</span>
+              <span id="topbar-low-stock">0 low stock</span>
+              <span id="topbar-kitchen">0 kitchen</span>
+            </div>
+          </div>
+        </div>
+        <div class="topbar-actions">
+          <label class="search-wrap" for="global-search">
+            <span>Search</span>
+            <input id="global-search" type="search" placeholder="UPC, item, order, staff">
+          </label>
+          <select id="staff-select" aria-label="Active staff member"></select>
+          <button class="ghost-button" id="clock-button">Clock In</button>
+        </div>
+      </header>
+
+      <section class="view active" id="view-pos" aria-labelledby="view-title">
+        <div class="pos-layout">
+          <section class="catalog-panel">
+            <div class="panel-head">
+              <div>
+                <p class="eyebrow">Fast checkout</p>
+                <h2>Menu and store catalog</h2>
+              </div>
+              <div class="mode-switch" id="category-tabs"></div>
+            </div>
+            <div class="quick-actions">
+              <button data-action="scan">Scan UPC</button>
+              <button data-action="weigh">Scale Item</button>
+              <button data-action="combo">Lunch Combo</button>
+              <button data-action="delivery">Delivery</button>
+              <button data-action="discount">Manager Discount</button>
+            </div>
+            <div class="catalog-grid" id="catalog-grid"></div>
+          </section>
+
+          <aside class="ticket-panel">
+            <div class="ticket-head">
+              <div>
+                <p class="eyebrow">Current ticket</p>
+                <h2 id="ticket-number">Order 1024</h2>
+              </div>
+              <span class="pill" id="service-mode">Counter</span>
+            </div>
+            <div class="ticket-meta">
+              <button class="chip active" data-service="Counter">Counter</button>
+              <button class="chip" data-service="Dine In">Dine In</button>
+              <button class="chip" data-service="Delivery">Delivery</button>
+              <button class="chip" data-service="EBT">EBT</button>
+            </div>
+            <div class="cart-lines" id="cart-lines"></div>
+            <div class="ticket-summary">
+              <div><span>Subtotal</span><strong id="subtotal">$0.00</strong></div>
+              <div><span>Tax</span><strong id="tax">$0.00</strong></div>
+              <div><span>Discounts</span><strong id="discounts">$0.00</strong></div>
+              <div class="grand-total"><span>Total</span><strong id="grand-total">$0.00</strong></div>
+            </div>
+            <div class="payment-row">
+              <button class="pay cash" data-pay="cash">Cash</button>
+              <button class="pay card" data-pay="card">Card</button>
+              <button class="pay split" data-pay="split">Split</button>
+            </div>
+            <div class="ticket-actions">
+              <button id="hold-order">Hold</button>
+              <button id="clear-order">Clear</button>
+              <button class="primary" id="complete-sale">Complete Sale</button>
+            </div>
+          </aside>
+        </div>
+      </section>
+
+      <section class="view" id="view-dashboard"></section>
+      <section class="view" id="view-inventory"></section>
+      <section class="view" id="view-kitchen"></section>
+      <section class="view" id="view-staff"></section>
+      <section class="view" id="view-reports"></section>
+      <section class="view" id="view-settings"></section>
+    </main>
+  </div>
+
+  <dialog class="modal" id="payment-modal">
+    <form id="payment-form">
+      <div class="modal-head">
+        <div>
+          <p class="eyebrow">Payment</p>
+          <h2 id="payment-title">Close sale</h2>
+        </div>
+        <button class="icon-button" id="payment-close" type="button" aria-label="Close">x</button>
+      </div>
+      <div class="payment-display">
+        <span>Amount due</span>
+        <strong id="amount-due">$0.00</strong>
+      </div>
+      <label class="field">Tendered
+        <input id="tendered-input" type="number" min="0" step="0.01" placeholder="0.00">
+      </label>
+      <div class="cash-grid" id="cash-grid"></div>
+      <div class="modal-actions">
+        <button id="cancel-payment" type="button">Cancel</button>
+        <button class="primary" id="confirm-payment" type="button">Finalize</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog class="receipt-modal" id="receipt-modal">
+    <div class="receipt-shell">
+      <div class="receipt-toolbar">
+        <div>
+          <p class="eyebrow">Receipt preview</p>
+          <h2>Sale complete</h2>
+        </div>
+        <button class="icon-button" id="receipt-close" type="button" aria-label="Close receipt">x</button>
+      </div>
+      <article class="luxury-receipt" id="receipt-content"></article>
+      <div class="receipt-actions">
+        <button id="receipt-print" type="button">Print Receipt</button>
+        <button class="primary" id="receipt-done" type="button">Done</button>
+      </div>
+    </div>
+  </dialog>
+
+  <div class="toast-stack" id="toast-stack" aria-live="polite"></div>
+  <script src="app.js"></script>
+</body>
+</html>
